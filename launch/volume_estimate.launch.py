@@ -10,24 +10,34 @@ def generate_launch_description():
     pkg_name = 'volume_estimate'
     pkg_path = get_package_share_directory(pkg_name)
 
+    config = os.path.join(
+    pkg_path,
+    'params',
+    'params.yaml'
+    )
+
     lidar_estimate = Node(
         package=pkg_name,
         executable='lidar_calibrator.py',
+        parameters = [config]
     )
 
     merger = Node(
         package=pkg_name,
         executable='merge_pointcloud.py',
+        parameters = [config]
     )
 
     clustering = Node(
         package=pkg_name,
         executable='clustering.py',
+        parameters = [config]
     )
 
     estimate = Node(
         package=pkg_name,
         executable='estimate.py',
+        parameters = [config]
     )
 
     delayed_launch = TimerAction(

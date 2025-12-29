@@ -9,11 +9,11 @@ lidar_calibrator:
 pointcloud_clustering_node:
   ros__parameters:
     floor_z_height: 0.05
-    cluster_dbscan_eps: 0.3
+    cluster_dbscan_eps: 0.7
     cluster_min_points: 20
-    normal_weight: 2.0
-    normal_estimation_radius: 0.3
-    min_pile_angle: 5.0
+    normal_weight: 10.0
+    normal_estimation_radius: 0.5
+    min_pile_angle: 10.0
     max_pile_angle: 45.0
 
 volume_estimator_node:
