@@ -9,9 +9,9 @@ import tf_transformations
 from tf2_ros import Buffer, TransformListener
 from message_filters import Subscriber, ApproximateTimeSynchronizer
 
-class ManualLidarMerger(Node):
+class LidarMerger(Node):
     def __init__(self):
-        super().__init__('manual_lidar_merger')
+        super().__init__('lidar_merger')
         
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -56,20 +56,18 @@ class ManualLidarMerger(Node):
             if matrix is None: continue
 
             gen = pc2.read_points(msg)
-            pts_array = np.fromiter(gen, dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4'), ('i', 'f4')])
-            pts_array = pts_array.view('float32').reshape(-1, 4)
+            pts_array = np.fromiter(gen, dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4')])
+            pts_array = pts_array.view('float32').reshape(-1, 3)
             
             if pts_array.shape[0] == 0: continue
 
             xyz = pts_array[:, :3]
-            intensity = pts_array[:, 3]
 
             points_h = np.ones((xyz.shape[0], 4))
             points_h[:, :3] = xyz
             transformed_xyz = (matrix @ points_h.T).T[:, :3]
 
-            combined = np.column_stack((transformed_xyz, intensity))
-            all_clouds_data.append(combined)
+            all_clouds_data.append(transformed_xyz)
 
         if not all_clouds_data:
             return
@@ -80,7 +78,6 @@ class ManualLidarMerger(Node):
             PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
             PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
             PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
-            PointField(name='intensity', offset=12, datatype=PointField.FLOAT32, count=1),
         ]
 
         output_msg = pc2.create_cloud(
@@ -94,7 +91,7 @@ class ManualLidarMerger(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ManualLidarMerger()
+    node = LidarMerger()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

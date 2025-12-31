@@ -14,8 +14,11 @@ class PointCloudClustering(Node):
 
         # --- Parameters ---
         self.declare_parameter('floor_z_height', 0.05)
+        self.declare_parameter('ceiling_z_height', 8.0)
+        self.declare_parameter('down_sampling_size', 0.1)
         self.declare_parameter('cluster_dbscan_eps', 0.3) 
-        self.declare_parameter('cluster_min_points', 20)
+        self.declare_parameter('cluster_dbscan_min_points', 20)
+        self.declare_parameter('cluster_min_points', 50)
         self.declare_parameter('normal_weight', 2.0) 
         self.declare_parameter('normal_estimation_radius', 0.3)
         self.declare_parameter('min_pile_angle', 5.0)
@@ -39,13 +42,18 @@ class PointCloudClustering(Node):
 
         # filter height
         floor_z = self.get_parameter('floor_z_height').value
-        mask = points_xyz[:, 2] > floor_z
+        ceiling_z = self.get_parameter('ceiling_z_height').value
+        mask = (points_xyz[:, 2] > floor_z) & (points_xyz[:, 2] < ceiling_z)
         object_points = points_xyz[mask]
-        original_data_filtered = full_data_np[mask]
 
         # return if size less than min point (no cluster)
         if object_points.shape[0] < self.get_parameter('cluster_min_points').value:
             return
+        
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(object_points)
+        pcd_down = pcd.voxel_down_sample(voxel_size=self.get_parameter('down_sampling_size').value) 
+        object_points = np.asarray(pcd_down.points)
 
         # ---------- CLUSTERING -------------
         # Estimate normal vector and angle
@@ -67,14 +75,14 @@ class PointCloudClustering(Node):
 
         # SKLEARN DBSCAN
         eps = self.get_parameter('cluster_dbscan_eps').value
-        min_pts = self.get_parameter('cluster_min_points').value
-        db = DBSCAN(eps=eps, min_samples=min_pts).fit(feature_space)
+        min_samples = self.get_parameter('cluster_dbscan_min_points').value
+        db = DBSCAN(eps=eps, min_samples=min_samples).fit(feature_space)
         labels = db.labels_
 
         # Prepare data for publish
         cluster_id_col = labels.astype(np.float32).reshape(-1, 1)
         slope_angle_col = angles_deg.astype(np.float32).reshape(-1, 1)
-        final_array = np.column_stack((original_data_filtered, cluster_id_col, slope_angle_col))
+        final_array = np.column_stack((object_points, cluster_id_col, slope_angle_col))
 
         new_fields = list(msg.fields)
         last_offset = new_fields[-1].offset + 4 
@@ -91,6 +99,7 @@ class PointCloudClustering(Node):
         
         min_angle = self.get_parameter('min_pile_angle').value
         max_angle = self.get_parameter('max_pile_angle').value
+        min_pts = self.get_parameter('cluster_min_points').value
 
         for label in unique_labels:
             if label == -1: continue

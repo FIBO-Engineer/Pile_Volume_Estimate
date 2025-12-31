@@ -4,19 +4,22 @@
 
 lidar_calibrator:
   ros__parameters:
-    max_correspondence_distance: 0.2
+    max_correspondence_distance: 0.1
 
 pointcloud_clustering_node:
   ros__parameters:
-    floor_z_height: 0.05
-    cluster_dbscan_eps: 0.7
-    cluster_min_points: 20
-    normal_weight: 10.0
-    normal_estimation_radius: 0.5
-    min_pile_angle: 10.0
-    max_pile_angle: 45.0
+    floor_z_height: 0.2
+    ceiling_z_height: 8.0
+    down_sampling_size: 0.1
+    cluster_dbscan_eps: 4.5
+    cluster_dbscan_min_points: 50
+    cluster_min_points: 100
+    normal_weight: 500.0
+    normal_estimation_radius: 0.8
+    min_pile_angle: 0.0
+    max_pile_angle: 55.0
 
 volume_estimator_node:
   ros__parameters:
-    voxel_size: 0.2
+    voxel_size: 0.5
     floor_height: 0.0
